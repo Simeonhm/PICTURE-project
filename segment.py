@@ -404,7 +404,7 @@ if api_key2:
     subfolders = [f.path for f in os.scandir(parent_folder) if f.is_dir()]
     print(f"Subfolders gevonden: {len(subfolders)}")
 
-    for folder in subfolders[19:121]:
+    for folder in subfolders:
         print(f"Verwerken van: {folder}")
         zip_file = zip_subfolder(folder)
         extracted_name = os.path.basename(zip_file)[:-4]  # Verwijder '.zip' van de bestandsnaam
