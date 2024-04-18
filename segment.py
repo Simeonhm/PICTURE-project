@@ -50,21 +50,15 @@ def login_get_api_key(login_url, email, password):
         print(response.text)
         return None
 
-def zip_subfolders(parent_folder):
-    subfolders = [f.path for f in os.scandir(parent_folder) if f.is_dir()]
-    zip_files = []
-    
-    for folder in subfolders:
-        zip_name = f"{folder}.zip"
-        with ZipFile(zip_name, 'w') as zipObj:
-            for foldername, subfolders, filenames in os.walk(folder):
-                for filename in filenames:
-                    filePath = os.path.join(foldername, filename)
-                    zipObj.write(filePath, os.path.relpath(filePath, folder))
-        zip_files.append(zip_name)
-        print(f"{zip_name} gemaakt.")
-
-    return zip_files
+def zip_subfolder(folder):
+    zip_name = f"{folder}.zip"
+    with ZipFile(zip_name, 'w') as zipObj:
+        for foldername, subfolders, filenames in os.walk(folder):
+            for filename in filenames:
+                filePath = os.path.join(foldername, filename)
+                zipObj.write(filePath, os.path.relpath(filePath, folder))
+    print(f"{zip_name} gemaakt.")
+    return zip_name
 
 def segmentatie_bestand_bestaat(extracted_name, documenten_folder):
     segmentatie_bestand = f'{documenten_folder}/{extracted_name}_segmentation.nii'
@@ -287,6 +281,7 @@ def get_brain_maps(api_key, param, data):
         if response.status_code == 200:
             print('Antwoord van get_brain_maps ontvangen.')
             response_data = response.json()  # Zet de respons om naar een dictionary
+            print(response_data)
             
             # Controleer of 'lowResBrainMap' en 'highResBrainMap' bestaan en niet None zijn
             if 'lowResBrainMap' in response_data['data'] and response_data['data']['lowResBrainMap'] is not None and \
@@ -344,6 +339,13 @@ def delete_get_brain_maps(api_key, param):
         print("Foutbericht:", response.text)
         return None, None
     
+# def delete_zip_file(zip_file_path):
+#     try:
+#         os.remove(zip_file_path)
+#         print(f"Verwijderd: {zip_file_path}")
+#     except Exception as e:
+#         print(f"Fout bij het verwijderen van {zip_file_path}: {e}")
+    
 # De workflow van het script
 parent_folder = '/Users/simeonhailemariam/Downloads/archive/BraTS2021_Training_Data'  # Pas dit aan naar de locatie van de hoofdmap
 login_url = 'https://tool.pictureproject.nl/api/user/login'  # Pas dit aan naar de werkelijke login URL
@@ -396,51 +398,61 @@ api_key2 = login_get_api_key(login_url2, email2, password2)
 #             update_brain_map_info(upload_id, api_key, data)
 documenten_folder = '/Users/simeonhailemariam/Documents'  # Definieer de map waar de segmentatiebestanden worden opgeslagen  
          
+# Workflow implementatie
 if api_key2:
     print("API key succesvol verkregen.")
-    zip_files = zip_subfolders(parent_folder)
-    for zip_file in zip_files:
-        bestandsnaam = os.path.basename(zip_file)
-        extracted_name = bestandsnaam[:-4]  # Verwijder '.zip' van de bestandsnaam
-    
-        # Controleer of het segmentatiebestand al bestaat
-        if segmentatie_bestand_bestaat(extracted_name, documenten_folder):
-            print(f'Segmentatiebestand voor {extracted_name} bestaat al, wordt overgeslagen.')
-            continue
-    
-        extracted_name, upload_id = upload_brain_map(upload_url, zip_file, api_key2)
-        if upload_id != "Onbekend":
-            update_brain_map_info(upload_id, api_key2, data)
-            # Haal de respons op en verwerk deze
-            response_json = perform_get_request(api_key2)  # Zorg dat deze functie de JSON response teruggeeft
-            if response_json:  # Controleer of er een respons is
-                file_ids = extract_file_ids_from_response(response_json) # Verkrijg de file IDs
-                if file_ids:
-                    data = {
-                        "uploadId": upload_id,  # Zorg ervoor dat de variabele upload_id hier correct is gedefinieerd
-                        "applyAutoSegmentation": True,
-                        "selectedFLAIRFileId": file_ids['selectedFLAIRFileId'], 
-                        "selectedT1wFileId": file_ids['selectedT1wFileId'], 
-                        "selectedT1cFileId": file_ids['selectedT1cFileId'], 
-                        "selectedT2wFileId": file_ids['selectedT2wFileId']
-                    }
-                    brain_map_id = apply_auto_segmentation(upload_id, api_key2, file_ids, data)
-                    if brain_map_id: 
+    subfolders = [f.path for f in os.scandir(parent_folder) if f.is_dir()]
+    print(f"Subfolders gevonden: {len(subfolders)}")
+
+    for folder in subfolders[19:121]:
+        print(f"Verwerken van: {folder}")
+        zip_file = zip_subfolder(folder)
+        extracted_name = os.path.basename(zip_file)[:-4]  # Verwijder '.zip' van de bestandsnaam
+
+        if not segmentatie_bestand_bestaat(extracted_name, documenten_folder):
+            print(f"Segmentatiebestand bestaat niet, doorgaan met verwerking voor: {extracted_name}")
+            extracted_name, upload_id = upload_brain_map(upload_url, zip_file, api_key2)
+            if upload_id != "Onbekend":
+                print(f"Upload ID verkregen: {upload_id}, doorgaan met bijwerken van informatie.")
+                update_brain_map_info(upload_id, api_key2, data)
+                response_json = perform_get_request(api_key2)
+                if response_json:
+                    file_ids = extract_file_ids_from_response(response_json)
+                    if file_ids:
                         data = {
-                            "param": brain_map_id  # Zorg ervoor dat de variabele upload_id hier correct is gedefinieerd
+                            "uploadId": upload_id,  # Zorg ervoor dat de variabele upload_id hier correct is gedefinieerd
+                            "applyAutoSegmentation": True,
+                            "selectedFLAIRFileId": file_ids['selectedFLAIRFileId'], 
+                            "selectedT1wFileId": file_ids['selectedT1wFileId'], 
+                            "selectedT1cFileId": file_ids['selectedT1cFileId'], 
+                            "selectedT2wFileId": file_ids['selectedT2wFileId']
                         }                        
-                        segmentation_url = get_brain_maps(api_key2, brain_map_id, data)  # Vang de returnwaarden op
-                        if segmentation_url and extracted_name:  # Controleer of beide waarden bestaan
-                            download_output_naar_lokale_pc(True, segmentation_url, extracted_name)
-                        else:
-                            print("De get request duurde langer dan 5 minuten.")
-                            continue  # Ga naar de volgende zip file                            
-                        delete_get_brain_maps(api_key2, brain_map_id)    
-                
+                        print(f"File IDs verkregen, toepassen van automatische segmentatie.")
+                        brain_map_id = apply_auto_segmentation(upload_id, api_key2, file_ids, data)
+                        if brain_map_id: 
+                            data = {
+                                "param": brain_map_id  # Zorg ervoor dat de variabele upload_id hier correct is gedefinieerd
+                            }   
+                            segmentation_url = get_brain_maps(api_key2, brain_map_id, data)
+                            if segmentation_url:
+                                print(f"Segmentatie URL verkregen: {segmentation_url}, downloaden naar lokale PC.")
+                                download_output_naar_lokale_pc(True, segmentation_url, extracted_name)
+                                # delete_get_brain_maps(api_key2, brain_map_id)
+                            else:
+                                print("Kon de segmentatie URL niet ophalen.")
+                    else:
+                        print("Kon file IDs niet extraheren uit de response.")
+                else:
+                    print("Kon geen response JSON verkrijgen van de server.")
+            else:
+                print("Upload ID is onbekend, kan geen verdere acties uitvoeren.")
+        else:
+            print(f"Segmentatiebestand voor {extracted_name} bestaat al, wordt overgeslagen.")
 
-
+        #delete_zip_file(zip_file)
+        time.sleep(10)  # Pauzeer voor 20 minuten
 else:
-    print("Kon geen API key verkrijgen.")    
+    print("Kon geen API key verkrijgen.")  
     
     
     
