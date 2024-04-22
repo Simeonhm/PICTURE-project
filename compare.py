@@ -30,26 +30,18 @@ def compute_metrics(TP, TN, FP, FN):
     specificity = TN / (TN + FP) if (TN + FP) > 0 else 0
     return accuracy, sensitivity, specificity
 
-def get_anatomical_label(atlas, fn_mask):
-    label_ids = np.unique(atlas[fn_mask])
-    return label_ids
-
-def analyze_slices(data, data2, atlas_data, slice_index):
+def analyze_slices(data, data2, slice_index, ai_file, expert_file):
     dice_score = dice_coefficient(data2, data)
     jaccard_score = jaccard_index(data2, data)
     TP, TN, FP, FN = compute_confusion_matrix(data2, data)
     accuracy, sensitivity, specificity = compute_metrics(TP, TN, FP, FN)
     
-    # Identificeer FN's en haal anatomische labels op
-    fn_mask = (data2 == 1) & (data == 0)
-    anatomical_labels = get_anatomical_label(atlas_data[:, :, slice_index], fn_mask)
-    
     print(f"Slice {slice_index} - DICE Score: {dice_score:.4f}, Jaccard Index: {jaccard_score:.4f}")
     print(f"Confusion Matrix: TP={TP}, TN={TN}, FP={FP}, FN={FN}")
     print(f"Metrics: Accuracy={accuracy:.4f}, Sensitivity={sensitivity:.4f}, Specificity={specificity:.4f}")
-    print(f"Anatomische labels voor FN's: {anatomical_labels}")
     
     plt.figure(figsize=(12, 6))
+    plt.suptitle(f"Analyse van {ai_file} en {expert_file}")
     plt.subplot(1, 2, 1)
     plt.imshow(data.T, cmap='gray', origin='lower')
     plt.title(f'Slice {slice_index} - AI Segmentatie')
@@ -61,11 +53,7 @@ def analyze_slices(data, data2, atlas_data, slice_index):
     plt.colorbar()
     plt.show()
 
-# Je bestaande match_and_compare functie aanpassen om de atlas te gebruiken
-def match_and_compare(ai_dir, expert_base_dir, atlas_path):
-    atlas_img = nib.load(atlas_path)
-    atlas_data = atlas_img.get_fdata()
-
+def match_and_compare(ai_dir, expert_base_dir):
     ai_files = [f for f in os.listdir(ai_dir) if f.endswith('_segmentation.nii')]
     
     for ai_file in ai_files:
@@ -82,6 +70,7 @@ def match_and_compare(ai_dir, expert_base_dir, atlas_path):
             img2 = nib.load(expert_path)
             data2 = img2.get_fdata()
             data2 = np.flip(data2, axis=1)
+            data2 = np.flip(data2, axis=0)
             
             if data.shape != data2.shape:
                 if np.prod(data.shape) < np.prod(data2.shape):
@@ -94,11 +83,10 @@ def match_and_compare(ai_dir, expert_base_dir, atlas_path):
                 slice_data = data[:, :, slice_index]
                 slice_data2 = data2[:, :, slice_index]
                 if np.any(slice_data == 1) or np.any(slice_data2 == 1):
-                    analyze_slices(slice_data, slice_data2, atlas_data, slice_index)
+                    analyze_slices(slice_data, slice_data2, slice_index, ai_file, expert_file)
         else:
             print(f"Geen overeenkomende expertsegmentatie gevonden voor {patient_id}")
 
-atlas_path = 'path_to_your_atlas.nii'  # Zorg dat je dit pad vervangt door het juiste pad naar je atlas.
 ai_dir = '/Users/simeonhailemariam/Documents'
 expert_base_dir = '/Users/simeonhailemariam/Downloads/archive/BraTS2021_Training_Data'
 match_and_compare(ai_dir, expert_base_dir)
