@@ -9,12 +9,10 @@ from nilearn.image import resample_img
 fn_nifti_map = "/Users/simeonhailemariam/Documents/FN_masks"
 atlas_nifti_bestand = "/Users/simeonhailemariam/Downloads/talairach (1).nii"
 excel_bestand = "/Users/simeonhailemariam/Documents/excel_label.xlsx"
-excel_bestand_anatomische_labels = "/Users/simeonhailemariam/Documents/excel_label2.xlsx"
 
 # Laad het atlas NIFTI-bestand en de Excel-bestanden
 atlas_nifti_img = nib.load(atlas_nifti_bestand)
 df_voxel_labels = pd.read_excel(excel_bestand)
-df_voxel_labels2 = pd.read_excel(excel_bestand_anatomische_labels)
 
 # Resampling configuratie
 target_affine = atlas_nifti_img.affine
