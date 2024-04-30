@@ -81,44 +81,7 @@ def upload_brain_map(upload_url, bestandspad, api_key):
     else:
         print(f'Fout bij het uploaden van {os.path.basename(bestandspad)}: {response.status_code}')
         print(response.text)
-        return "Onbekend", "Onbekend", "Onbekend"    
-
-    # if response.status_code == 201:
-    #     print(f'{os.path.basename(bestandspad)} succesvol geüpload!')
-        
-    #     # Voer de zoekopdracht uit om de gewenste deel uit zip_name te halen
-    #     match = re.search(r'BraTS2021_Training_Data/(.*?)\.zip', bestandspad)
-    #     if match:
-    #         extracted_name = match.group(1)
-    #         print(f"Gevonden deel: {extracted_name}")
-    #         return extracted_name
-    #     else:
-    #         print("Geen overeenkomst gevonden voor de naam extractie.")
-
-    #     # Zoek naar het uploadId in de response
-    #     match_upload = re.search(r'"uploadId":"([^"]+)"', response.text)
-    #     if match_upload:
-    #         upload_id = match_upload.group(1)
-    #         print(f'Upload ID: {upload_id} .')
-    #         return upload_id
-    #     else:
-    #         print('Upload ID kon niet worden gevonden in de response.')
-    #         upload_id = None
-
-    #     # Zoek naar het brainMapId in de response
-    #     match_brain = re.search(r'"brainMapId":"([^"]+)"', response.text)
-    #     if match_brain:
-    #         brain_map_id = match_brain.group(1)
-    #         print(f'Brain Map ID: {brain_map_id}')
-    #         return brain_map_id
-    #     else:
-    #         print('Brain Map ID kon niet worden gevonden in de response.')
-    #         brain_map_id = None
-
-    # else:
-    #     print(f'Fout bij het uploaden van {os.path.basename(bestandspad)}: {response.status_code}')
-    #     print(response.text)
-    #     return None, None
+        return "Onbekend", "Onbekend", "Onbekend"   
 
 
 def update_brain_map_info(upload_id, api_key, data):
@@ -210,60 +173,6 @@ def apply_auto_segmentation(upload_id, api_key, file_ids, data):
     else:
         print(f"Fout bij het toepassen van automatische segmentatie: {response.status_code}")
         print(response.text)
-        
-
-# def get_brain_maps(api_key, param, data):
-#     url = f'https://tool.pictureproject.nl/api/brain-map/{param}'
-#     headers = {'Authorization': f'Bearer {api_key}'}
-#     response = requests.get(url, json=data, headers=headers)
-    
-#     if response.status_code == 200:
-#         print('gelukt met get!')
-#         print(response.text)
-#         match_segmentation_url = re.search(r'"segmentationFileURL":"([^"]+)"', response.text)
-#         segmentation_url = match_segmentation_url.group(1) if match_segmentation_url else None
-#         print(segmentation_url)
-#         return segmentation_url
-#     else:
-#         print(f"Fout bij het uitvoeren van het GET-verzoek met brain map id. Status code: {response.status_code}")
-#         print("Foutbericht:", response.text)
-#         return None, None
-    
-# def get_brain_maps(api_key, param, data):
-#     url = f'https://tool.pictureproject.nl/api/brain-map/{param}'
-#     headers = {'Authorization': f'Bearer {api_key}'}
-
-#     while True:
-#         response = requests.get(url, json=data, headers=headers)
-        
-#         if response.status_code == 200:
-#             print('Antwoord van get_brain_maps ontvangen.')
-#             print(response.text)
-
-#             # Zoek naar lowResBrainMap en highResBrainMap in de response tekst
-#             lowResBrainMap_search = re.search(r'"lowResBrainMap":("([^"]+)"|null)', response.text)
-#             highResBrainMap_search = re.search(r'"highResBrainMap":("([^"]+)"|null)', response.text)
-
-#             if lowResBrainMap_search and highResBrainMap_search:
-#                 lowResBrainMap = lowResBrainMap_search.group(2)
-#                 highResBrainMap = highResBrainMap_search.group(2)
-
-#                 if lowResBrainMap is not None and highResBrainMap is not None:
-#                     print('lowResBrainMap en highResBrainMap zijn nu gevuld.')
-#                     # Zoek naar segmentationFileURL in de response tekst
-#                     match_segmentation_url = re.search(r'"segmentationFileURL":"([^"]+)"', response.text)
-#                     segmentation_url = match_segmentation_url.group(1) if match_segmentation_url else None
-#                     return segmentation_url
-#                 else:
-#                     print("lowResBrainMap en highResBrainMap zijn nog steeds null. Wachten en opnieuw proberen...")
-#                     time.sleep(60)  # Wacht 60 seconden voordat je het opnieuw probeert
-#             else:
-#                 print("Kon lowResBrainMap of highResBrainMap niet vinden in de respons. Wachten en opnieuw proberen...")
-#                 time.sleep(60)  # Mogelijk een probleem met de respons structuur; wacht en probeer opnieuw
-#         else:
-#             print(f"Fout bij het uitvoeren van het GET-verzoek met brain map id. Status code: {response.status_code}")
-#             print("Foutbericht:", response.text)
-#             return None
 
 def get_brain_maps(api_key, param, data):
     url = f'https://tool.pictureproject.nl/api/brain-map/{param}'
@@ -377,25 +286,6 @@ data = {
 api_key = login_get_api_key(login_url, email, password)
 api_key2 = login_get_api_key(login_url2, email2, password2)
 
-# if api_key:
-#     print("API key succesvol verkregen.")
-#     zip_files = zip_subfolders(parent_folder)
-#     for zip_file in zip_files:
-#         upload_id = upload_brain_map(upload_url, zip_file, api_key)
-#         if upload_id:
-#             update_brain_map_info(upload_id, api_key, data)
-#             # Voorbeeld van hoe je deze functies in de workflow zou kunnen opnemen
-#             response_json = perform_get_request(api_key)  # Zorg ervoor dat deze functie nu een JSON-object retourneert
-#             file_ids = extract_file_ids_from_response(response_json)
-#             apply_auto_segmentation(upload_id, api_key, file_ids)
-
-# if api_key:
-#     print("API key succesvol verkregen.")
-#     zip_files = zip_subfolders(parent_folder)
-#     for zip_file in zip_files:
-#         upload_id = upload_brain_map(upload_url, zip_file, api_key)
-#         if upload_id:
-#             update_brain_map_info(upload_id, api_key, data)
 documenten_folder = '/Users/simeonhailemariam/Documents'  # Definieer de map waar de segmentatiebestanden worden opgeslagen  
          
 # Workflow implementatie
@@ -404,7 +294,7 @@ if api_key2:
     subfolders = [f.path for f in os.scandir(parent_folder) if f.is_dir()]
     print(f"Subfolders gevonden: {len(subfolders)}")
 
-    for folder in subfolders:
+    for folder in subfolders[200:300]:
         print(f"Verwerken van: {folder}")
         zip_file = zip_subfolder(folder)
         extracted_name = os.path.basename(zip_file)[:-4]  # Verwijder '.zip' van de bestandsnaam
@@ -453,6 +343,3 @@ if api_key2:
         time.sleep(10)  # Pauzeer voor 20 minuten
 else:
     print("Kon geen API key verkrijgen.")  
-    
-    
-    
